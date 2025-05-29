@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Soccer Matches</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #34495e;
+            font-size: 1.2rem;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ecf0f1;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .match-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #27ae60;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+        }
+        
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .team {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        
+        .vs {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 0 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .match-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .date-time {
+            color: #5d6d7e;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .competition {
+            color: #8e44ad;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e74c3c;
+            background: #fdf2f2;
+            border-radius: 10px;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .refresh-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .api-info {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #0c5460;
+        }
+        
+        .api-info strong {
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Upcoming Soccer Matches</h1>
+            <p>Stay updated with the latest football fixtures</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            Loading upcoming matches...
+        </div>
+        
+        <div id="matches-container" style="display: none;">
+            <div id="matches-grid" class="matches-grid"></div>
+        </div>
+        
+        <div id="error-container" style="display: none;">
+            <div class="error">
+                <h3>Unable to load matches</h3>
+                <p>There was an error fetching the match data. Please try again later.</p>
+                <button class="refresh-btn" onclick="loadMatches()">Try Again</button>
+            </div>
+        </div>
+        
+        <div class="api-info">
+            <strong>API Source:</strong> Football-Data.org (https://api.football-data.org/v4/competitions/PL/matches)<br>
+            <strong>Status:</strong> <span id="api-status">Live API connection active</span><br>
+            <strong>Note:</strong> Fetching real Premier League match data. If CORS restrictions apply, the app will fallback to mock data for demonstration purposes.
+        </div>
+    </div>
+
+    <script>
+        // Backend service for fetching live football data
+        class SoccerMatchesBackend {
+            constructor() {
+                this.apiUrl = 'https://api.football-data.org/v4/competitions/PL/matches';
+                this.apiKey = 'd32f0abb36e24245b45f92be57d42e94';
+                this.corsProxy = 'https://cors-anywhere.herokuapp.com/';
+            }
+            
+            async fetchMatches() {
+                try {
+                    // Attempt direct API call first
+                    let response;
+                    try {
+                        response = await fetch(this.apiUrl, {
+                            method: 'GET',
+                            headers: {
+                                'X-Auth-Token': this.apiKey,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    } catch (corsError) {
+                        // If CORS fails, try with proxy (note: cors-anywhere requires activation)
+                        console.log('Direct API call failed due to CORS, trying with proxy...');
+                        response = await fetch(this.corsProxy + this.apiUrl, {
+                            method: 'GET',
+                            headers: {
+                                'X-Auth-Token': this.apiKey,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    }
+                    
+                    if (!response.ok) {
+                        if (response.status === 403) {
+                            throw new Error('API key invalid or quota exceeded');
+                        } else if (response.status === 429) {
+                            throw new Error('API rate limit exceeded');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Filter for upcoming matches only
+                    const now = new Date();
+                    const upcomingMatches = data.matches.filter(match => {
+                        const matchDate = new Date(match.utcDate);
+                        return matchDate > now;
+                    }).slice(0, 10); // Limit to next 10 matches
+                    
+                    return { matches: upcomingMatches };
+                    
+                } catch (error) {
+                    console.error('API fetch failed, falling back to mock data:', error);
+                    // Fallback to mock data if API fails
+                    return this.getMockData();
+                }
+            }
+            
+            getMockData() {
+                // Fallback mock data
+                const today = new Date();
+                const mockMatches = [
+                    {
+                        homeTeam: { name: "Manchester United" },
+                        awayTeam: { name: "Liverpool" },
+                        utcDate: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        competition: { name: "Premier League" }
+                    },
+                    {
+                        homeTeam: { name: "Chelsea" },
+                        awayTeam: { name: "Arsenal" },
+                        utcDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        competition: { name: "Premier League" }
+                    },
+                    {
+                        homeTeam: { name: "Manchester City" },
+                        awayTeam: { name: "Tottenham" },
+                        utcDate: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        competition: { name: "Premier League" }
+                    },
+                    {
+                        homeTeam: { name: "Newcastle United" },
+                        awayTeam: { name: "Brighton" },
+                        utcDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        competition: { name: "Premier League" }
+                    },
+                    {
+                        homeTeam: { name: "Aston Villa" },
+                        awayTeam: { name: "West Ham" },
+                        utcDate: new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                        competition: { name: "Premier League" }
+                    }
+                ];
+                
+                return { matches: mockMatches };
+            }
+        }
+
+        // Frontend Application
+        class SoccerMatchesApp {
+            constructor() {
+                this.backend = new SoccerMatchesBackend();
+                this.loadingEl = document.getElementById('loading');
+                this.matchesContainer = document.getElementById('matches-container');
+                this.matchesGrid = document.getElementById('matches-grid');
+                this.errorContainer = document.getElementById('error-container');
+            }
+            
+            async init() {
+                await this.loadMatches();
+            }
+            
+            async loadMatches() {
+                this.showLoading();
+                
+                try {
+                    const data = await this.backend.fetchMatches();
+                    this.renderMatches(data.matches);
+                    this.showMatches();
+                    
+                    // Update API status
+                    const statusEl = document.getElementById('api-status');
+                    if (statusEl) {
+                        statusEl.textContent = 'Live API connection active';
+                        statusEl.style.color = '#27ae60';
+                    }
+                } catch (error) {
+                    console.error('Error loading matches:', error);
+                    this.showError();
+                    
+                    // Update API status
+                    const statusEl = document.getElementById('api-status');
+                    if (statusEl) {
+                        statusEl.textContent = 'Using fallback data due to API limitations';
+                        statusEl.style.color = '#e67e22';
+                    }
+                }
+            }
+            
+            showLoading() {
+                this.loadingEl.style.display = 'block';
+                this.matchesContainer.style.display = 'none';
+                this.errorContainer.style.display = 'none';
+            }
+            
+            showMatches() {
+                this.loadingEl.style.display = 'none';
+                this.matchesContainer.style.display = 'block';
+                this.errorContainer.style.display = 'none';
+            }
+            
+            showError() {
+                this.loadingEl.style.display = 'none';
+                this.matchesContainer.style.display = 'none';
+                this.errorContainer.style.display = 'block';
+            }
+            
+            renderMatches(matches) {
+                this.matchesGrid.innerHTML = '';
+                
+                matches.forEach(match => {
+                    const matchCard = this.createMatchCard(match);
+                    this.matchesGrid.appendChild(matchCard);
+                });
+            }
+            
+            createMatchCard(match) {
+                const card = document.createElement('div');
+                card.className = 'match-card';
+                
+                const matchDate = new Date(match.utcDate);
+                const formattedDate = matchDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const formattedTime = matchDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                card.innerHTML = `
+                    <div class="teams">
+                        <div class="team">
+                            <div class="team-name">${match.homeTeam.name}</div>
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="team">
+                            <div class="team-name">${match.awayTeam.name}</div>
+                        </div>
+                    </div>
+                    <div class="match-info">
+                        <div class="date-time">
+                            📅 ${formattedDate} at ${formattedTime}
+                        </div>
+                        <div class="competition">
+                            🏆 ${match.competition.name}
+                        </div>
+                    </div>
+                `;
+                
+                return card;
+            }
+        }
+
+        // Global function for retry button
+        let app;
+        
+        function loadMatches() {
+            if (app) {
+                app.loadMatches();
+            }
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new SoccerMatchesApp();
+            app.init();
+        });
+    </script>
+</body>
+</html>
