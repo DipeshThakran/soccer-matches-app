@@ -1,16 +1,26 @@
 # Soccer Matches Web App
 
-A modern web application displaying upcoming Premier League matches using the Football-Data.org API.
+A full-stack web application displaying upcoming Premier League matches.
+
+## Architecture
+- **Frontend**: HTML, CSS, JavaScript (communicates with backend API)
+- **Backend**: Node.js + Express (fetches data from Football-Data.org API)
+- **API**: Football-Data.org REST API
 
 ## Features
+- Separate frontend and backend architecture
 - Live Premier League match data
 - Responsive design
-- Real-time API integration
-- Fallback to mock data if API unavailable
+- Error handling and fallbacks
+- Health check endpoints
 
-## API
-- Source: Football-Data.org
-- Endpoint: https://api.football-data.org/v4/competitions/PL/matches
+## Setup
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create `.env` file with your API key
+4. Start server: `npm start`
+5. Open http://localhost:3000
 
-## Usage
-Simply open `index.html` in a web browser to view upcoming matches.
+## API Endpoints
+- `GET /api/matches` - Fetch upcoming matches
+- `GET /api/health` - Backend health check
